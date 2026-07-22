@@ -1011,11 +1011,10 @@ const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
             }}
           >
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 10 }}>
-              Güncellemeyi onayla
+                Confirm the update
             </div>
             <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, marginBottom: 18 }}>
-              Güncelleme işlemi sonrasında kart bağlantılarınız değişecektir.
-              Bu değişiklikleri yapmak istediğinizden emin misiniz?
+              Your card information will change after the update. Are you sure you want to make these changes?
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
@@ -1025,7 +1024,7 @@ const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
                   background: '#fff', color: '#475569', fontSize: 14, cursor: 'pointer',
                 }}
               >
-                Vazgeç
+                Cancel
               </button>
               <button
                 onClick={() => { setUpdateConfirmOpen(false); handleSave() }}
@@ -1035,7 +1034,7 @@ const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
                   fontSize: 14, fontWeight: 600, cursor: 'pointer',
                 }}
               >
-                Evet, güncelle
+                Yes, update
               </button>
             </div>
           </div>

@@ -302,11 +302,11 @@ function App() {
             }}
           >
             <div style={{ fontSize: 16, fontWeight: 700, color: '#1e293b', marginBottom: 10 }}>
-              Silmeyi onayla
+              Confirm deletion
             </div>
             <div style={{ fontSize: 14, color: '#475569', lineHeight: 1.5, marginBottom: 18 }}>
-              <b>{deleteTarget.Name}</b> tasarımını silmek istediğinizden emin misiniz?
-              Bu işlem geri alınamaz.
+              <b>{deleteTarget.Name}</b> Are you sure you want to delete your design?
+This action cannot be undone.
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button
@@ -318,7 +318,7 @@ function App() {
                   cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit',
                 }}
               >
-                Vazgeç
+               Cancel
               </button>
               <button
                 onClick={confirmDelete}
@@ -330,7 +330,7 @@ function App() {
                   cursor: deleting ? 'default' : 'pointer', fontFamily: 'inherit',
                 }}
               >
-                {deleting ? 'Siliniyor…' : 'Evet, sil'}
+                {deleting ? 'Deleting…' : 'Yes, delete'}
               </button>
             </div>
           </div>

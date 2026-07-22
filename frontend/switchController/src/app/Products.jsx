@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getProducts, createProduct,getProductOptions, createProducOptions } from '../services/productService'
+import { getProducts, createProduct,getProductOptions, createProducOptions, DeleteProductOption } from '../services/productService'
 import { createProductType, getProductTypes } from '../services/productTypeService'
 import Modal from '../components/Modal'
 import './Products.css'
@@ -10,6 +10,15 @@ function PlusIcon() {
   return (
     <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
       <path d="M12 5v14M5 12h14" />
+    </svg>
+  )
+}
+
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+      <path d="M10 11v5M14 11v5" />
     </svg>
   )
 }
@@ -36,6 +45,9 @@ function Products() {
   const [optionsLoading, setOptionsLoading] = useState(false)
   const [optionName, setOptionName] = useState('')
   const [optionSaving, setOptionSaving] = useState(false)
+  const [optionError, setOptionError] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null) // option awaiting delete confirmation
+  const [deletingOptionId, setDeletingOptionId] = useState(null)
 
   async function loadData() {
     const [productsRes, typesRes] = await Promise.all([getProducts(), getProductTypes()])
@@ -94,6 +106,8 @@ function Products() {
     setOptionsProduct(product)
     setOptionName('')
     setOptions([])
+    setOptionError('')
+    setConfirmDeleteId(null)
     setOptionsLoading(true)
     try {
       const res = await getProductOptions(product.ID)
@@ -106,11 +120,18 @@ function Products() {
     }
   }
 
+  function closeOptions() {
+    setOptionsProduct(null)
+    setConfirmDeleteId(null)
+    setOptionError('')
+  }
+
   // Add a new option to the currently opened product
   async function handleAddOption(e) {
     e.preventDefault()
     if (!optionName.trim() || !optionsProduct) return
     setOptionSaving(true)
+    setOptionError('')
     try {
       await createProducOptions({ Name: optionName.trim(), Product_ID: optionsProduct.ID })
       setOptionName('')
@@ -118,8 +139,27 @@ function Products() {
       setOptions(Array.isArray(res) ? res : [])
     } catch (err) {
       console.error('could not add product option:', err)
+      setOptionError('Could not add the option.')
     } finally {
       setOptionSaving(false)
+    }
+  }
+
+  // Delete an option, then re-read the list so the UI shows what the server actually has
+  async function handleDeleteOption(opt) {
+    if (!optionsProduct) return
+    setDeletingOptionId(opt.ID)
+    setOptionError('')
+    try {
+      await DeleteProductOption(opt.ID)
+      const res = await getProductOptions(optionsProduct.ID)
+      setOptions(Array.isArray(res) ? res : [])
+      setConfirmDeleteId(null)
+    } catch (err) {
+      console.error('could not delete product option:', err)
+      setOptionError('Could not delete the option.')
+    } finally {
+      setDeletingOptionId(null)
     }
   }
 
@@ -329,57 +369,88 @@ function Products() {
 
       <Modal
         open={!!optionsProduct}
-        onClose={() => setOptionsProduct(null)}
+        onClose={closeOptions}
         title={optionsProduct ? `${optionsProduct.Name} — Options` : 'Options'}
-        description="View this product's options and add new ones."
+        description="View this product's options, add new ones or remove them."
       >
         <form className="form" onSubmit={handleAddOption}>
-          <label className="field">
+          <div className="field">
             <span className="field__label">New Option</span>
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="option-add">
               <input
                 type="text"
                 autoFocus
                 placeholder="e.g. Automation COM"
                 value={optionName}
                 onChange={(e) => setOptionName(e.target.value)}
-                style={{ flex: 1 }}
               />
               <button type="submit" className="btn btn--primary" disabled={optionSaving || !optionName.trim()}>
                 {optionSaving ? 'Saving…' : 'Add'}
               </button>
             </div>
-          </label>
+          </div>
         </form>
 
-        <div style={{ marginTop: 8 }}>
+        {optionError && <div className="form__error">{optionError}</div>}
+
+        <div className="option-section">
           <span className="field__label">Existing options</span>
           {optionsLoading ? (
-            <div className="state-text" style={{ padding: '10px 0' }}>Loading…</div>
+            <div className="state-text option-section__state">Loading…</div>
           ) : options.length === 0 ? (
-            <div className="state-text" style={{ padding: '10px 0' }}>No options yet.</div>
+            <div className="state-text option-section__state">No options yet.</div>
           ) : (
-            <ul style={{ listStyle: 'none', margin: '8px 0 0', padding: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {options.map((opt) => (
-                <li
-                  key={opt.ID}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 12px', borderRadius: 8,
-                    border: '1px solid #e2e8f0', background: '#f8fafc',
-                    fontSize: 14, color: '#1e293b',
-                  }}
-                >
-                  <span>{opt.Name}</span>
-                  <span style={{ fontSize: 12, color: '#94a3b8' }}>#{opt.ID}</span>
-                </li>
-              ))}
+            <ul className="option-list">
+              {options.map((opt) => {
+                const confirming = confirmDeleteId === opt.ID
+                const busy = deletingOptionId === opt.ID
+                return (
+                  <li key={opt.ID} className="option-row">
+                    <span className="option-row__name">{opt.Name}</span>
+
+                    {confirming ? (
+                      <span className="option-row__actions">
+                        <span className="option-row__confirm">Delete?</span>
+                        <button
+                          type="button"
+                          className="btn btn--danger btn--xs"
+                          onClick={() => handleDeleteOption(opt)}
+                          disabled={busy}
+                        >
+                          {busy ? 'Deleting…' : 'Yes'}
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn--ghost btn--xs"
+                          onClick={() => setConfirmDeleteId(null)}
+                          disabled={busy}
+                        >
+                          Cancel
+                        </button>
+                      </span>
+                    ) : (
+                      <span className="option-row__actions">
+                        <span className="option-row__id">#{opt.ID}</span>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--danger"
+                          onClick={() => setConfirmDeleteId(opt.ID)}
+                          aria-label={`Delete option ${opt.Name}`}
+                          title="Delete option"
+                        >
+                          <TrashIcon />
+                        </button>
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>
 
-        <div className="form__footer" style={{ marginTop: 16 }}>
-          <button type="button" className="btn btn--ghost" onClick={() => setOptionsProduct(null)}>
+        <div className="form__footer option-section__footer">
+          <button type="button" className="btn btn--ghost" onClick={closeOptions}>
             Close
           </button>
         </div>

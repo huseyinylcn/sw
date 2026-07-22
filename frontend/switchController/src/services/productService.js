@@ -35,3 +35,11 @@ export function createProducOptions(data) {
     body: JSON.stringify(data),   
   })
 }
+
+
+export function DeleteProductOption(id) {
+  return request(`/v1/delete/product_options/${id}`, {
+    method: 'DELETE', 
+  })
+}
+
