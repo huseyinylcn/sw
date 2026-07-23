@@ -15,12 +15,13 @@ import Scenario from './app/Scenario.jsx'
 import Navbar from './components/Navbar.jsx'
 import Settings from './app/Settings.jsx'
 import SwitchBoard from './app/SwitchBoard.jsx'
+import Login from './app/Login.jsx'
 
 import { isAdmin } from './shared/auth'
 
 // Keep non-admins out of these pages even via the address bar -> send them to the dashboard
 function AdminOnly({ children }) {
-  return isAdmin ? children : <Navigate to="/dashboard" replace />
+  return isAdmin ? children : <Navigate to="/main" replace />
 }
 
 
@@ -31,7 +32,8 @@ createRoot(document.getElementById('root')).render(
       <Navbar />
       <Routes>
         <Route path="/" element={<App />} />
-        <Route path="/dashboard" element={<App />} />
+        <Route path="/main" element={<App />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/products" element={<AdminOnly><Products /></AdminOnly>} />
         <Route path="/design" element={<AdminOnly><Design /></AdminOnly>} />
         <Route path="/settings" element={<Settings />} />
@@ -39,7 +41,6 @@ createRoot(document.getElementById('root')).render(
 
 
         <Route path="/design/:id" element={<AdminOnly><Design /></AdminOnly>} />
-        {/* scenario view is read-only -> open to everyone */}
         <Route path="/scenario/:id" element={<Scenario />} />
 
       </Routes>

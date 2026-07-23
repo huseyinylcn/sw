@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getDesigns, deleteDesign,getScripts,getScript,updateScript,getSerial } from '../services/DesignService'
 import { isAdmin } from '../shared/auth'
@@ -32,9 +32,9 @@ function App() {
       .catch(() => setActiveScriptId(null))
   }, [])
 
-  // Scenarios: getScripts is called with the clicked design's ID, results are listed on the right.
-  const handleShowScripts = async (design, e) => {
-    e.stopPropagation()
+  // Load a design's scenarios and list them on the right. Shared by the card click,
+  // the "Scenarios" button and the auto-open on first load.
+  const loadScripts = useCallback(async (design) => {
     setSelected(design)
     setScriptsDesign(design)
     setScriptsLoading(true)
@@ -46,7 +46,17 @@ function App() {
     } finally {
       setScriptsLoading(false)
     }
+  }, [])
+
+  const handleShowScripts = (design, e) => {
+    e.stopPropagation()
+    loadScripts(design)
   }
+
+  // On first load: if there are designs, open the first one's scenarios automatically.
+  useEffect(() => {
+    if (designs.length > 0 && !scriptsDesign) loadScripts(designs[0])
+  }, [designs, scriptsDesign, loadScripts])
 
   // Activate: the scenario's ID is sent as switch_ID -> the serial port uses that scenario.
   const handleActivate = async (script, e) => {
@@ -126,7 +136,7 @@ function App() {
             return (
               <div
                 key={design.ID}
-                onClick={() => setSelected(design)}
+                onClick={() => loadScripts(design)}
                 style={{
                   display: 'flex', flexDirection: 'column',
                   background: '#fff', borderRadius: 16, overflow: 'hidden',
@@ -210,6 +220,40 @@ function App() {
               </div>
             )
           })}
+
+          {/* Yeni tasarım ekleme kartı: normalde silik, üstüne gelince canlanır.
+              Design sayfası admin korumalı olduğu için sadece admin'e gösterilir. */}
+          {isAdmin && (
+            <div
+              onClick={() => navigate('/design')}
+              style={{
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: 12,
+                minHeight: 240, height: '100%', boxSizing: 'border-box', padding: 20,
+                background: 'transparent', borderRadius: 16,
+                border: '2px dashed #cbd5e1', color: '#94a3b8',
+                cursor: 'pointer', opacity: 0.55,
+                transition: 'opacity 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1'
+                e.currentTarget.style.borderColor = '#2563eb'
+                e.currentTarget.style.color = '#2563eb'
+                e.currentTarget.style.transform = 'translateY(-3px)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.55'
+                e.currentTarget.style.borderColor = '#cbd5e1'
+                e.currentTarget.style.color = '#94a3b8'
+                e.currentTarget.style.transform = 'none'
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="42" height="42" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>Design Add</div>
+            </div>
+          )}
         </div>
       </div>
 

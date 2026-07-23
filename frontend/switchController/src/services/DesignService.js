@@ -43,6 +43,15 @@ export function updateDesign(data) {
 
 
 
+export function updateSwitch(data) {
+  return request('/v1/update/switch', {
+    method: 'POST',
+    body: JSON.stringify(data),   
+  })
+}
+
+
+
 export function createScript(data) {
   return request('/v1/post/script', {
     method: 'POST',

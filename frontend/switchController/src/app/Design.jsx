@@ -77,6 +77,23 @@ function handleStyle(h, scale = 1, pct = 50) {
   return { ...dot, left: off }
 }
 
+// Where the editing field sits while a handle label is edited. Same anchor as the label
+// (outward from the handle) but ALWAYS horizontal — no 65° rotation — and, crucially, a fixed
+// readable font/size that does NOT shrink with the node's scale. The field stays inline (part of
+// the node) so it moves with the canvas and it's always clear which handle is being edited.
+function handleEditStyle(h, scale = 1, pct = 50) {
+  const off = `${pct}%`
+  const base = { position: 'absolute', zIndex: 30 }
+  const gap = 12 * scale
+  switch (h.position) {
+    case Position.Right:  return { ...base, left: '100%', top: off, transform: 'translateY(-50%)', marginLeft: gap }
+    case Position.Left:   return { ...base, right: '100%', top: off, transform: 'translateY(-50%)', marginRight: gap }
+    case Position.Top:    return { ...base, left: off, bottom: '100%', transform: 'translateX(-50%)', marginBottom: gap }
+    case Position.Bottom: return { ...base, left: off, top: '100%', transform: 'translateX(-50%)', marginTop: gap }
+    default:              return base
+  }
+}
+
 // Handle label: double-click to edit. Editing shows a dropdown of the product's options
 // (loaded via getProductOptions); if the wanted value isn't there, "✏️ Manuel gir…" switches
 // to a free-text input. Hover reveals the ✕ that deletes the handle.
@@ -93,6 +110,8 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
   const fieldRef = useRef(null)
 
   const style = handleLabelStyle(handle, scale, pct)
+  // The editing field keeps a fixed, readable size regardless of how small the node is.
+  const editStyle = handleEditStyle(handle, scale, pct)
 
   // Focus the field ourselves instead of using autoFocus. React implements autoFocus as a bare
   // element.focus(), which lets the browser scroll the React Flow wrapper (it is overflow:hidden,
@@ -138,7 +157,7 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
     if (manual) {
       return (
         <input
-          className="nodrag"
+          className="nodrag nowheel"
           ref={fieldRef}
           value={value}
           // the switch to manual mode is done -> stop swallowing blurs (see switchingRef)
@@ -149,7 +168,13 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
             if (e.key === 'Enter') commit()
             if (e.key === 'Escape') cancel()
           }}
-          style={{ ...style, pointerEvents: 'auto', width: 74 * scale, border: '1px solid #94a3b8', borderRadius: 3 * scale, padding: `0 ${2 * scale}px` }}
+          placeholder="Etiket adı"
+          style={{
+            ...editStyle, pointerEvents: 'auto',
+            width: 160, fontSize: 13, padding: '6px 8px',
+            border: '1px solid #2563eb', borderRadius: 7, background: '#fff',
+            boxShadow: '0 6px 16px -6px rgba(15,23,42,0.4)',
+          }}
         />
       )
     }
@@ -158,7 +183,7 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
     const inList = list.some((o) => o.Name === value)
     return (
       <select
-        className="nodrag"
+        className="nodrag nowheel"
         ref={fieldRef}
         value={inList ? value : ''}
         onChange={(e) => {
@@ -172,7 +197,12 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
           cancel()
         }}
         onKeyDown={(e) => { if (e.key === 'Escape') cancel() }}
-        style={{ ...style, pointerEvents: 'auto', width: 90 * scale, border: '1px solid #94a3b8', borderRadius: 3 * scale, padding: `0 ${2 * scale}px`, background: '#fff' }}
+        style={{
+          ...editStyle, pointerEvents: 'auto',
+          width: 180, fontSize: 13, padding: '6px 8px',
+          border: '1px solid #2563eb', borderRadius: 7, background: '#fff',
+          boxShadow: '0 6px 16px -6px rgba(15,23,42,0.4)', cursor: 'pointer',
+        }}
       >
         <option value="">{loading ? 'Yükleniyor…' : '— seç —'}</option>
         {list.map((o) => (
@@ -190,14 +220,14 @@ function HandleLabel({ nodeId, handle, onEdit, onRemove, scale = 1, pct = 50, op
       onDoubleClick={startEdit}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      title="Double-click: edit"
+      title="Çift tıkla: düzenle"
     >
       {handle.label || '…'}
       {hover && (
         <button
           onClick={(e) => { e.stopPropagation(); onRemove?.(nodeId, handle.id) }}
           style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', fontSize: 10 * scale, lineHeight: 1, padding: 0 }}
-          title="Delete handle"
+          title="Handle'ı sil"
         >
           ✕
         </button>
