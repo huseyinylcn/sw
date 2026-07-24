@@ -1,6 +1,6 @@
 import { getToken } from '../shared/auth'
 
-const BASE_URL = 'http://localhost:5001'
+const BASE_URL = 'http://192.168.150.220:5001'
 
 async function request(endpoint, options = {}) {
   const isFormData = options.body instanceof FormData

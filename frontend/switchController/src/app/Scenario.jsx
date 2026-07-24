@@ -138,7 +138,7 @@ function ScenarioInner() {
   }, [nodes, edges, activeOnly])
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
+    <div style={{ width: '100vw', height: '100vh', background: 'linear-gradient(135deg, #dce3ee 0%, #c6d1e2 100%)' }}>
       {/* selected (active) edge animation — same as on the Design page */}
       <style>{`
         .edge-flow .react-flow__edge-path {
@@ -166,8 +166,9 @@ function ScenarioInner() {
         minZoom={0.2}
         maxZoom={4}
         fitView
+        style={{ background: 'transparent' }}
       >
-        <Background />
+        <Background color="#7d8ba5" gap={24} size={1.7} />
         <Controls showInteractive={false} />
       </ReactFlow>
 
